@@ -1,0 +1,10 @@
+version: '3'
+ 
+services:
+  ducky-network:
+    image: golang:latest
+    restart: unless-stopped
+    working_dir: /go/src/app
+    volumes:
+      - ./app:/go/src/app
+    command: ["tail", "-f", "/dev/null"]
