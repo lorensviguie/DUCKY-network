@@ -25,7 +25,6 @@ func SendMessage(message []byte, conn net.Conn) {
 	messageSize := CompileMessageSize(message)
 	headerSize := []byte{CompileHeaderSize(messageSize)}
 	fmt.Println("msgsize", len(message))
-	fmt.Println(message)
 	fmt.Println("hsize :", headerSize)
 	data := append(append(headerSize, messageSize...), message...)
 	if _, err := conn.Write(data); err != nil {

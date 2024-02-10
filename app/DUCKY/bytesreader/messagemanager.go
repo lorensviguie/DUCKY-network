@@ -5,10 +5,11 @@ import (
 	authStorage "DUCKY/DUCKY/structure"
 	"bytes"
 	"fmt"
+	"net"
 )
 
 var StorageAuth []authStorage.Authentification
-var Session []authStorage.Session
+
 
 func sendAuthRequest(lines []string) []byte {
 
@@ -27,19 +28,18 @@ func sendAuthRequest(lines []string) []byte {
 	return append([]byte("startauthentification\n"+alphaCheck+"\n"), cryptMSG...)
 }
 
-func CheckAuth(lines []string) []byte {
+func CheckAuth(lines []string, conn net.Conn) []byte {
 	alphaCheck := lines[1]
 	randomAuth, username := GetRandomAuthByAuthID(alphaCheck)
 	returnchack := []byte(lines[2])
-	fmt.Println(randomAuth)
-	fmt.Println(returnchack)
 	if bytes.Equal(randomAuth, returnchack) {
 		addSession := authStorage.Session{
 			Username:  username,
 			SessionID: alphaCheck,
+			Conn:      conn,
 		}
-		Session = append(Session, addSession)
-		return []byte("You are authentificate Has : " + username + "\nWith This ID :\n" + alphaCheck)
+		authStorage.Sessions = append(authStorage.Sessions, addSession)
+		return []byte("01\nYou are authentificate Has : \n" + username + "\nWith This ID :\n" + alphaCheck)
 	} else {
 		return []byte("You are not authentificate")
 	}

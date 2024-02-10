@@ -1,15 +1,25 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"time"
+	"os"
 )
 
 func main() {
-	fmt.Print("Chargement en cours")
-	for i := 0; i < 5; i++ {
-		fmt.Print(".")
-		time.Sleep(500 * time.Millisecond)
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Print("Enter your message: ")
+
+		// Read the entire line until newline
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			return
+		}
+
+		// Print the input without newline
+		fmt.Print(input)
 	}
-	fmt.Println("\nOpération terminée!")
 }

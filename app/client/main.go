@@ -3,6 +3,7 @@ package main
 import (
 	br "DUCKY/client/bytesreader"
 	send "DUCKY/client/sendMSG"
+	store "DUCKY/client/structure"
 	"bufio"
 	"crypto/rand"
 	"crypto/rsa"
@@ -123,6 +124,7 @@ func handleConnection(conn net.Conn) {
 }
 
 func main() {
+	var mySession store.Session
 	fmt.Print("Veuillez entrer votre nom d'utilisateur : ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -146,7 +148,18 @@ func main() {
 
 	// Pour éviter que le programme principal ne se termine immédiatement
 	// Vous pouvez attendre une entrée utilisateur ou utiliser un autre mécanisme pour laisser le programme en cours d'exécution
-	var input string
-	fmt.Scanln(&input)
-	defer conn.Close()
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("Enter your message: ")
+
+		// Read the entire line until newline
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Error reading input:", err)
+			return
+		}
+		mySession = store.Sessions[0]
+		toSend := []byte(fmt.Sprintf("tchat\n%s\n%s\n%s", mySession.Username, mySession.SessionID, input))
+		send.SendMessage([]byte(toSend), conn)
+	}
 }

@@ -16,4 +16,7 @@ type Authentification struct {
 type Session struct {
 	Username  string
 	SessionID string
+	Conn      net.Conn
 }
+
+var Sessions []Session

@@ -27,7 +27,10 @@ func SplitMessage(messageBuff string, conn net.Conn) {
 		send.SendMessage(sendAuthRequest(lines), conn)
 	}
 	if lines[0] == "startauthentification" {
-		send.SendMessage(CheckAuth(lines), conn)
+		send.SendMessage(CheckAuth(lines, conn), conn)
+	}
+	if lines[0] == "tchat" {
+		send.SendToTchat([]byte(strings.Join(lines[3:], " ")), lines[1], conn)
 	} else {
 		fmt.Println(strings.Join(lines, " "))
 	}

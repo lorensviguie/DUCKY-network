@@ -1,6 +1,7 @@
 package sendmsg
 
 import (
+	authStorage "DUCKY/DUCKY/structure"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -28,8 +29,20 @@ func SendMessage(message []byte, conn net.Conn) {
 	fmt.Println("hsize :", headerSize)
 	data := append(append(headerSize, messageSize...), message...)
 	if _, err := conn.Write(data); err != nil {
+		conn.Close()
 		fmt.Println("Erreur lors de l'envoi du message :", err)
 		return
 	}
 	fmt.Println("Message send with succces to", conn.RemoteAddr())
+}
+
+func SendToTchat(message []byte, Sender string, connToExclude net.Conn) {
+	allSession := authStorage.Sessions
+	Tosend := append(append([]byte("tchat\n"), []byte("["+Sender+"]")...), message...)
+	for _, session := range allSession {
+		if session.Conn != connToExclude {
+			fmt.Println("\n message send to ", session.Username)
+			SendMessage(Tosend, session.Conn)
+		}
+	}
 }

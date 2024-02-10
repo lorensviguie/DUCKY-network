@@ -50,7 +50,6 @@ func LogToFile(fileName string, logContent string) error {
 	// Ajouter le nouveau log
 	newLog := LogData{Content: string(logContent + time.Now().Format("02/01/2006:15:04"))}
 	logs = append(logs, newLog)
-
 	// Réécrire le fichier avec le nouveau log
 	file.Seek(0, 0)
 	file.Truncate(0)
