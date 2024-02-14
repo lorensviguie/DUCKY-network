@@ -5,4 +5,6 @@ type Session struct {
 	SessionID []byte
 }
 
+var ServeurCheck = false
+var ServeurAUth []byte
 var Sessions []Session

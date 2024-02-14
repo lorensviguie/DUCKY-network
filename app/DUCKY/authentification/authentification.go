@@ -10,8 +10,6 @@ import (
 	"math/big"
 )
 
-// EncryptAndGenerateID chiffre une suite aléatoire avec la clé publique RSA fournie
-// et renvoie la suite chiffrée, la suite non chiffrée, et un identifiant unique.
 func encryptAndGenerateID(publicKeyStr string) ([]byte, []byte, string, error) {
 	block, _ := pem.Decode([]byte(publicKeyStr))
 	if block == nil || block.Type != "RSA PUBLIC KEY" {
@@ -49,6 +47,9 @@ func StartAuthentificationUser(username string) ([]byte, []byte, string) {
 	if publickey == "Error" {
 		return []byte{110}, []byte{0}, "no"
 	}
-	cryptText, uncrypttext, Alphacheck, _ := encryptAndGenerateID(publickey)
+	cryptText, uncrypttext, Alphacheck, err := encryptAndGenerateID(publickey)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return cryptText, uncrypttext, Alphacheck
 }

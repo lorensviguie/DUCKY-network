@@ -5,6 +5,7 @@ import (
 	br "DUCKY/DUCKY/bytesreader"
 	db "DUCKY/DUCKY/database"
 	logs "DUCKY/DUCKY/logs"
+	sec "DUCKY/DUCKY/security"
 	"fmt"
 	"net"
 )
@@ -13,17 +14,6 @@ type ClientInfo struct {
 	IP   string
 	Conn net.Conn
 }
-
-// func handleConnection(conn net.Conn) {
-// 	defer conn.Close()
-
-// 	fmt.Println("\n You receive a message FROM :", conn.RemoteAddr())
-// 	headerSize := br.ReadHeaderSize(conn)
-// 	fmt.Println(headerSize)
-// 	messagesize := br.ReadMessageSize(conn, headerSize)
-// 	fmt.Println(messagesize)
-// 	br.MessageReader(conn, messagesize)
-// }
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
@@ -43,6 +33,10 @@ func handleConnection(conn net.Conn) {
 
 func main() {
 	db.Create()
+	err := sec.GenerateKeyPair()
+	if err != nil {
+		fmt.Println("Erreur lors de la génération de la paire de clés:", err)
+	}
 	listener, err := net.Listen("tcp", ":666")
 	if err != nil {
 		fmt.Println("Erreur lors de l'écoute sur le port 666 :", err)

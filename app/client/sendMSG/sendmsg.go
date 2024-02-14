@@ -24,12 +24,12 @@ func CompileHeaderSize(messageSize []byte) byte {
 func SendMessage(message []byte, conn net.Conn) {
 	messageSize := CompileMessageSize(message)
 	headerSize := []byte{CompileHeaderSize(messageSize)}
-	fmt.Println("msgsize", len(message))
-	fmt.Println("hsize :", headerSize)
+	//fmt.Println("msgsize", len(message))
+	//fmt.Println("hsize :", headerSize)
 	data := append(append(headerSize, messageSize...), message...)
 	if _, err := conn.Write(data); err != nil {
 		fmt.Println("Erreur lors de l'envoi du message :", err)
 		return
 	}
-	fmt.Println("Informations envoyées avec succès au serveur a :", conn.RemoteAddr())
+	//fmt.Println("Informations envoyées avec succès au serveur a :", conn.RemoteAddr())
 }

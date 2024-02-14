@@ -2,13 +2,12 @@ package main
 
 import (
 	br "DUCKY/client/bytesreader"
+	security "DUCKY/client/security"
 	send "DUCKY/client/sendMSG"
+	serveur "DUCKY/client/serveurauth"
 	store "DUCKY/client/structure"
+	user "DUCKY/client/user"
 	"bufio"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"net"
 	"os"
@@ -24,43 +23,10 @@ func keysExist() bool {
 
 	return !os.IsNotExist(privateErr) && !os.IsNotExist(publicErr)
 }
-
-func generateKeyPair(bits int) (*rsa.PrivateKey, *rsa.PublicKey, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, bits)
-	if err != nil {
-		return nil, nil, err
-	}
-	publicKey := &privateKey.PublicKey
-	return privateKey, publicKey, nil
-}
-
-func savePEMKey(filename string, key *rsa.PrivateKey) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	privBytes := x509.MarshalPKCS1PrivateKey(key)
-	privBlock := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: privBytes}
-
-	return pem.Encode(file, privBlock)
-}
-
-func savePEMKeyPublic(filename string, pubkey *rsa.PublicKey) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	pubBytes, err := x509.MarshalPKIXPublicKey(pubkey)
-	if err != nil {
-		return err
-	}
-	pubBlock := &pem.Block{Type: "RSA PUBLIC KEY", Bytes: pubBytes}
-
-	return pem.Encode(file, pubBlock)
+func HaveServeurKey() bool {
+	serveurKeyPath := filepath.Join(".ssh", "serveurpublickey.pem")
+	_, privateErr := os.Stat(serveurKeyPath)
+	return !os.IsNotExist(privateErr)
 }
 
 func sendUserInfo(username string, publicKey string, conn net.Conn) {
@@ -75,50 +41,24 @@ func askAuthentification(username string, conn net.Conn) {
 
 }
 
-func getPublicKey() string {
-	publicKeyPath := filepath.Join(".ssh", "public.pem")
-	publicKeyBytes, err := os.ReadFile(publicKeyPath)
-	if err != nil {
-		fmt.Println("Erreur lors de la lecture de la clé publique :", err)
-		return "err"
-	}
-	return string(publicKeyBytes)
-}
-
-func NewUser() {
-	privateKey, publicKey, err := generateKeyPair(2048)
-	if err != nil {
-		fmt.Println("Erreur lors de la génération de la paire de clés:", err)
-		return
-	}
-
-	err = savePEMKey(".ssh/private.pem", privateKey)
-	if err != nil {
-		fmt.Println("Erreur lors de la sauvegarde de la clé privée:", err)
-		return
-	}
-
-	err = savePEMKeyPublic(".ssh/public.pem", publicKey)
-	if err != nil {
-		fmt.Println("Erreur lors de la sauvegarde de la clé publique:", err)
-		return
-	}
-
-	fmt.Println("Paire de clés générée et sauvegardée avec succès.")
-}
-
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
-
 	for {
-
 		headerSize := br.ReadHeaderSize(conn)
-		if headerSize != 0 {
-			fmt.Println("\nYou receive a message from : ", conn.RemoteAddr())
-			fmt.Println("taille du header recu: ", headerSize)
+		if !store.ServeurCheck {
 			messagesize := br.ReadMessageSize(conn, headerSize)
-			fmt.Println("taille du message recu : ", messagesize)
-			br.MessageReader(conn, messagesize)
+			br.READERforserveurauth(conn, messagesize)
+		} else {
+			if headerSize != 0 {
+				messagesize := br.ReadMessageSize(conn, headerSize)
+				if !br.VarLog() {
+					fmt.Println("\nYou receive a message from : ", conn.RemoteAddr())
+					fmt.Println("taille du header recu: ", headerSize)
+					fmt.Println("taille du message recu : ", messagesize)
+				}
+				br.MessageReader(conn, messagesize)
+			}
+
 		}
 	}
 }
@@ -137,22 +77,17 @@ func main() {
 		return
 	}
 	if !keysExist() {
-		NewUser()
-		sendUserInfo(username, getPublicKey(), conn)
-	} else {
-		askAuthentification(username, conn)
+		user.NewUser()
+		sendUserInfo(username, security.GetPublicKey(), conn)
 	}
+	if !HaveServeurKey() {
+		serveur.AskServerKey(conn)
+	}
+	security.AskServerAuthentification(conn)
+	askAuthentification(username, conn)
 	go handleConnection(conn)
-
-	// Ici, vous pouvez effectuer d'autres opérations dans votre programme si nécessaire
-
-	// Pour éviter que le programme principal ne se termine immédiatement
-	// Vous pouvez attendre une entrée utilisateur ou utiliser un autre mécanisme pour laisser le programme en cours d'exécution
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("Enter your message: ")
-
-		// Read the entire line until newline
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Println("Error reading input:", err)

@@ -1,6 +1,7 @@
 package bytesreader
 
 import (
+	security "DUCKY/DUCKY/security"
 	send "DUCKY/DUCKY/sendMSG"
 	"fmt"
 	"net"
@@ -19,19 +20,20 @@ func MessageReader(conn net.Conn, reconstructedMessageSize int) {
 
 func SplitMessage(messageBuff string, conn net.Conn) {
 	lines := strings.Split(messageBuff, "\n")
-	if lines[0] == "new user" {
+	switch lines[0] {
+	case "new user":
 		NewUser(lines)
-	}
-	fmt.Println(lines[0])
-	if lines[0] == "askauthentification" {
+	case "askkey":
+		send.SendMessage([]byte(fmt.Sprintf("getkey\n%s", security.GetPublicKey())), conn)
+	case "askauthentification":
 		send.SendMessage(sendAuthRequest(lines), conn)
-	}
-	if lines[0] == "startauthentification" {
+	case "startauthentification":
 		send.SendMessage(CheckAuth(lines, conn), conn)
-	}
-	if lines[0] == "tchat" {
+	case "tchat":
 		send.SendToTchat([]byte(strings.Join(lines[3:], " ")), lines[1], conn)
-	} else {
+	case "proveyouridentity":
+		send.SendMessage(ProveIdentity(lines), conn)
+	default:
 		fmt.Println(strings.Join(lines, " "))
 	}
 }

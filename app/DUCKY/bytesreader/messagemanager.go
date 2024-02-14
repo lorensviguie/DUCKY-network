@@ -2,14 +2,15 @@ package bytesreader
 
 import (
 	auth "DUCKY/DUCKY/authentification"
+	security "DUCKY/DUCKY/security"
 	authStorage "DUCKY/DUCKY/structure"
 	"bytes"
 	"fmt"
 	"net"
+	"strings"
 )
 
 var StorageAuth []authStorage.Authentification
-
 
 func sendAuthRequest(lines []string) []byte {
 
@@ -43,4 +44,10 @@ func CheckAuth(lines []string, conn net.Conn) []byte {
 	} else {
 		return []byte("You are not authentificate")
 	}
+}
+
+func ProveIdentity(lines []string) []byte {
+	messagebyte := []byte(strings.Join(lines[1:], "\n"))
+	messagedecrypt, _ := security.DecryptMessage(messagebyte, security.GetPrivateKey())
+	return append([]byte("proveidentity\n"), messagedecrypt...)
 }

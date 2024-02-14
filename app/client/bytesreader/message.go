@@ -1,14 +1,20 @@
 package bytesreader
 
 import (
-	decrypt "DUCKY/client/decrypt"
 	send "DUCKY/client/sendMSG"
+	serveur "DUCKY/client/serveurauth"
 	store "DUCKY/client/structure"
+	"bytes"
 	"fmt"
 	"net"
 	"strings"
 )
+
 var log = false
+
+func VarLog() bool {
+	return log
+}
 
 func MessageReader(conn net.Conn, reconstructedMessageSize int) {
 	messageBuf := make([]byte, reconstructedMessageSize)
@@ -18,19 +24,38 @@ func MessageReader(conn net.Conn, reconstructedMessageSize int) {
 	}
 	SplitMessage(string(messageBuf), conn)
 }
+func READERforserveurauth(conn net.Conn, reconstructedMessageSize int) {
+	messageBuf := make([]byte, reconstructedMessageSize)
+	_, err := conn.Read(messageBuf)
+	if err != nil {
+		fmt.Println("Erreur lors de la lecture du message :", err)
+	}
+	lines := strings.Split(string(messageBuf), "\n")
+	fmt.Println(lines[0])
+	if lines[0] == "getkey" {
+		err := serveur.WriteToFile(strings.Join(lines[1:], "\n"))
+		if err != nil {
+			fmt.Println("Erreur :", err)
+		}
+	}
+	if lines[0] == "proveidentity" {
+		data := strings.Join(lines[1:], "\n")
+		if bytes.Equal(store.ServeurAUth, []byte(data)) {
+			fmt.Println("--------------------\nSERVEUR AUTHENTIFIER\n--------------------")
+			store.ServeurCheck = true
+		} else {
+			fmt.Println("ERREUR lors de l'authentification du serveur")
+		}
+	}
+}
 
 func SplitMessage(messageBuff string, conn net.Conn) {
 	lines := strings.Split(messageBuff, "\n")
-	if !log{
+	if !log {
 		fmt.Println(lines[0])
 	}
 	if lines[0] == "startauthentification" {
-		alphaCheck := []byte(lines[1])
-		messagebyte := []byte(strings.Join(lines[2:], "\n"))
-		messagedecrypt, _ := decrypt.DecryptMessage(messagebyte, GetPrivateKey())
-		//fmt.Println(messagedecrypt)
-		message := []byte(fmt.Sprintf("startauthentification\n%s\n%s", alphaCheck, messagedecrypt))
-		send.SendMessage(message, conn)
+		send.SendMessage(MessageStartAuth(lines), conn)
 	}
 	if lines[0] == "01" {
 		username := lines[2]
@@ -44,7 +69,7 @@ func SplitMessage(messageBuff string, conn net.Conn) {
 		fmt.Println("--------------------------------------------------------------\n\nNow you are Connected To DUCKY NETWORK Enjoy your Session\n\n--------------------------------------------------------------")
 		//Menu(conn)
 	}
-	if lines[0] == "tchat"{
+	if lines[0] == "tchat" {
 		PrintAllLine(lines)
 	} else {
 		PrintAllLine(lines)
@@ -60,7 +85,7 @@ func Menu(conn net.Conn) {
 }
 
 func PrintAllLine(lines []string) {
-	for i := 0; i < len(lines); i++ {
+	for i := 1; i < len(lines); i++ {
 		fmt.Println((lines[i]))
 	}
 }
