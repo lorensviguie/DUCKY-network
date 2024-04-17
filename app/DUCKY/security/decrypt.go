@@ -8,14 +8,14 @@ import (
 	"fmt"
 )
 
-func DecryptMessage(ciphertext []byte, privateKeyStr string) ([]byte, error) {
+func DecryptMessage(privateKeyStr string, ciphertext []byte) ([]byte, error) {
 	// Parse la clé privée au format PEM
 	block, _ := pem.Decode([]byte(privateKeyStr))
 	if block == nil || block.Type != "RSA PRIVATE KEY" {
 		return nil, fmt.Errorf("Erreur lors du décodage de la clé privée")
 	}
 
-	// Parse la clé privée au format RSA
+	// Parse la clé privée au format PKCS#1
 	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("Erreur lors du parsing de la clé privée : %v", err)

@@ -13,7 +13,7 @@ func ReadHeaderSize(conn net.Conn) int {
 		return 0
 	}
 	if headerSizeBuf[0] != 0 {
-		fmt.Println("Receive message from : ", conn.RemoteAddr())
+		fmt.Println("\n Receive message from : ", conn.RemoteAddr())
 		fmt.Println("taille du header recu : ", headerSizeBuf[0])
 	}
 	return int(headerSizeBuf[0])

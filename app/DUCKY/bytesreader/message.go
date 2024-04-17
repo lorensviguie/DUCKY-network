@@ -1,8 +1,11 @@
 package bytesreader
 
 import (
+	command "DUCKY/DUCKY/command"
+	room "DUCKY/DUCKY/room"
 	security "DUCKY/DUCKY/security"
 	send "DUCKY/DUCKY/sendMSG"
+
 	"fmt"
 	"net"
 	"strings"
@@ -20,6 +23,7 @@ func MessageReader(conn net.Conn, reconstructedMessageSize int) {
 
 func SplitMessage(messageBuff string, conn net.Conn) {
 	lines := strings.Split(messageBuff, "\n")
+	fmt.Println(lines[0])
 	switch lines[0] {
 	case "new user":
 		NewUser(lines)
@@ -33,6 +37,10 @@ func SplitMessage(messageBuff string, conn net.Conn) {
 		send.SendToTchat([]byte(strings.Join(lines[3:], " ")), lines[1], conn)
 	case "proveyouridentity":
 		send.SendMessage(ProveIdentity(lines), conn)
+	case "command":
+		command.ManageCommand(lines[3:],lines[1], conn)
+	case "room":
+		room.ManageRoom(lines,conn)
 	default:
 		fmt.Println(strings.Join(lines, " "))
 	}

@@ -2,6 +2,8 @@ package main
 
 import (
 	br "DUCKY/client/bytesreader"
+	command "DUCKY/client/command"
+	room "DUCKY/client/room"
 	security "DUCKY/client/security"
 	send "DUCKY/client/sendMSG"
 	serveur "DUCKY/client/serveurauth"
@@ -12,19 +14,18 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func keysExist() bool {
-	privateKeyPath := filepath.Join(".ssh", "private.pem")
-	publicKeyPath := filepath.Join(".ssh", "public.pem")
-
+	var privateKeyPath = filepath.Join(store.KeyPath, "private.pem")
+	var publicKeyPath = filepath.Join(store.KeyPath, "public.pem")
 	_, privateErr := os.Stat(privateKeyPath)
 	_, publicErr := os.Stat(publicKeyPath)
-
 	return !os.IsNotExist(privateErr) && !os.IsNotExist(publicErr)
 }
 func HaveServeurKey() bool {
-	serveurKeyPath := filepath.Join(".ssh", "serveurpublickey.pem")
+	serveurKeyPath := filepath.Join(store.KeyPath, "serveurpublickey.pem")
 	_, privateErr := os.Stat(serveurKeyPath)
 	return !os.IsNotExist(privateErr)
 }
@@ -64,7 +65,10 @@ func handleConnection(conn net.Conn) {
 }
 
 func main() {
-	var mySession store.Session
+	if len(os.Args[1:]) > 0 {
+		fmt.Println("You change key location to : ", os.Args[1])
+		store.KeyPath = os.Args[1]
+	}
 	fmt.Print("Veuillez entrer votre nom d'utilisateur : ")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
@@ -93,8 +97,20 @@ func main() {
 			fmt.Println("Error reading input:", err)
 			return
 		}
-		mySession = store.Sessions[0]
-		toSend := []byte(fmt.Sprintf("tchat\n%s\n%s\n%s", mySession.Username, mySession.SessionID, input))
-		send.SendMessage([]byte(toSend), conn)
+		if input == "\n" {
+
+		} else {
+			input = strings.TrimSpace(input) // supprime les espaces blancs autour de la saisie
+			header := "tchat"
+			if strings.HasPrefix(input, "/") {
+				command.ManageCommand(input, conn)
+			}
+			if strings.HasPrefix(input, "\\") {
+				room.ManageRoom(input, conn)
+			} else {
+				toSend := []byte(fmt.Sprintf("%s\n%s\n%s\n%s", header, store.Sessions.Username, store.Sessions.SessionID, input))
+				send.SendMessage([]byte(toSend), conn)
+			}
+		}
 	}
 }

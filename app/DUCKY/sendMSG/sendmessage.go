@@ -1,10 +1,14 @@
 package sendmsg
 
 import (
+	"DUCKY/DUCKY/database"
+	db "DUCKY/DUCKY/database"
+	"DUCKY/DUCKY/security"
 	authStorage "DUCKY/DUCKY/structure"
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strings"
 )
 
 func CompileMessageSize(message []byte) []byte {
@@ -38,11 +42,55 @@ func SendMessage(message []byte, conn net.Conn) {
 
 func SendToTchat(message []byte, Sender string, connToExclude net.Conn) {
 	allSession := authStorage.Sessions
-	Tosend := append(append([]byte("tchat\n"), []byte("["+Sender+"]")...), message...)
+
 	for _, session := range allSession {
 		if session.Conn != connToExclude {
 			fmt.Println("\n message send to ", session.Username)
+			privatekey := db.SelectKeyFromUser(session.Username)
+			cryptdata, _ := security.EncryptMessageWithPublic(privatekey, string(Sender+"\n"+string(message)))
+			Tosend := append([]byte("tchat\n"), cryptdata...)
 			SendMessage(Tosend, session.Conn)
 		}
 	}
+}
+
+func SendToUser(message []byte, Sender string, Tosend string) {
+	allSession := authStorage.Sessions
+
+	for _, session := range allSession {
+		if session.Username == Tosend {
+			fmt.Println("\n message send to ", session.Username)
+			privatekey := db.SelectKeyFromUser(session.Username)
+			cryptdata, _ := security.EncryptMessageWithPublic(privatekey, string(Sender+"\n"+string(message)))
+			Tosend := append([]byte("tchat\n"), cryptdata...)
+			SendMessage(Tosend, session.Conn)
+		}
+	}
+}
+
+func SendToRoom(data []string,sender string) {
+	//username := data[0]
+	//sessionID := data[1]
+	roomName := data[3]
+	message := strings.Join(data[4:], " ")
+	userstosend, _ := database.GetUsersInRoom(roomName)
+	allSession := authStorage.Sessions
+	for _, session := range allSession {
+		if contains(userstosend, session.Username) {
+			fmt.Println("\n message send to ", session.Username)
+			privatekey := db.SelectKeyFromUser(session.Username)
+			cryptdata, _ := security.EncryptMessageWithPublic(privatekey, string(sender+"\n"+string(message)))
+			Tosend := append([]byte("room\n"), cryptdata...)
+			SendMessage(Tosend, session.Conn)
+		}
+	}
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }

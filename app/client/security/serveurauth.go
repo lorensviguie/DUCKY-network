@@ -22,8 +22,9 @@ func AskServerAuthentification(conn net.Conn) {
 }
 
 func encrypt(publicKeyStr string) ([]byte, []byte, error) {
+	fmt.Println(publicKeyStr)
 	block, _ := pem.Decode([]byte(publicKeyStr))
-	if block == nil || block.Type != "RSA PUBLIC KEY" {
+	if block == nil || block.Type != " RSA PUBLIC KEY" {
 		return nil, nil, fmt.Errorf("erreur lors du décodage de la clé publique")
 	}
 	publicKey, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -44,6 +45,5 @@ func encrypt(publicKeyStr string) ([]byte, []byte, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("erreur lors du chiffrement : %v", err)
 	}
-	fmt.Println(ciphertext,randomData)
 	return ciphertext, randomData, nil
 }

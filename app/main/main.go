@@ -20,9 +20,7 @@ func handleConnection(conn net.Conn) {
 
 	affichage.FormatAndDisplay(fmt.Sprintf("Nouvelle connexion établie depuis %s\n", conn.RemoteAddr()))
 	logs.LogToFile("Connexion", fmt.Sprintf("New Connexion From %s\n", conn.RemoteAddr()))
-
 	for {
-
 		headerSize := br.ReadHeaderSize(conn)
 		if headerSize != 0 {
 			messagesize := br.ReadMessageSize(conn, headerSize)

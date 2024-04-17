@@ -1,6 +1,7 @@
 package bytesreader
 
 import (
+	decrypt "DUCKY/client/decrypt"
 	send "DUCKY/client/sendMSG"
 	serveur "DUCKY/client/serveurauth"
 	store "DUCKY/client/structure"
@@ -24,6 +25,7 @@ func MessageReader(conn net.Conn, reconstructedMessageSize int) {
 	}
 	SplitMessage(string(messageBuf), conn)
 }
+
 func READERforserveurauth(conn net.Conn, reconstructedMessageSize int) {
 	messageBuf := make([]byte, reconstructedMessageSize)
 	_, err := conn.Read(messageBuf)
@@ -40,6 +42,7 @@ func READERforserveurauth(conn net.Conn, reconstructedMessageSize int) {
 	}
 	if lines[0] == "proveidentity" {
 		data := strings.Join(lines[1:], "\n")
+		fmt.Println(store.ServeurAUth)
 		if bytes.Equal(store.ServeurAUth, []byte(data)) {
 			fmt.Println("--------------------\nSERVEUR AUTHENTIFIER\n--------------------")
 			store.ServeurCheck = true
@@ -58,21 +61,46 @@ func SplitMessage(messageBuff string, conn net.Conn) {
 		send.SendMessage(MessageStartAuth(lines), conn)
 	}
 	if lines[0] == "01" {
+		encryptedData := []byte(strings.Join(lines[5:], "\n"))
+		privateKeyStr := GetPrivateKey()
+		decryptedData, err := decrypt.DecryptMessageWithPrivate(privateKeyStr, encryptedData)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(removeLastCharacter(decryptedData))
 		username := lines[2]
 		alphaCheck := lines[4]
 		addSession := store.Session{
 			Username:  username,
 			SessionID: []byte(alphaCheck),
+			PublicKey: string(decryptedData),
 		}
-		store.Sessions = append(store.Sessions, addSession)
+		store.Sessions = addSession
 		log = true
 		fmt.Println("--------------------------------------------------------------\n\nNow you are Connected To DUCKY NETWORK Enjoy your Session\n\n--------------------------------------------------------------")
-		//Menu(conn)
+		fmt.Println("\n you're connected has : " + lines[2])
+		store.Authentifier = true
 	}
 	if lines[0] == "tchat" {
 		PrintAllLine(lines)
-	} else {
-		PrintAllLine(lines)
+	}
+	if lines[0] == "command" {
+		encryptedData := []byte(strings.Join(lines[1:], "\n"))
+		privateKeyStr := GetPrivateKey()
+		decryptedData, err := decrypt.DecryptMessageWithPrivate(privateKeyStr, encryptedData)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(decryptedData)
+	}
+	if lines[0] == "room"{
+		encryptedData := []byte(strings.Join(lines[1:], "\n"))
+		privateKeyStr := GetPrivateKey()
+		decryptedData, _ := decrypt.DecryptMessageWithPrivate(privateKeyStr, encryptedData)
+		messageFinal := strings.Split(decryptedData, "\n")
+		for i := 0; i < len((messageFinal)); i++ {
+			println(messageFinal[i])	
+		}
 	}
 }
 
@@ -85,7 +113,15 @@ func Menu(conn net.Conn) {
 }
 
 func PrintAllLine(lines []string) {
-	for i := 1; i < len(lines); i++ {
-		fmt.Println((lines[i]))
+	messagebyte := []byte(strings.Join(lines[1:], "\n"))
+	messagedecrypt, _ := decrypt.DecryptMessageWithPrivate(GetPrivateKey(), messagebyte)
+	messageFinal := strings.Split(messagedecrypt, "\n")
+	fmt.Println("[" + messageFinal[0] + "] " + messageFinal[1])
+}
+
+func removeLastCharacter(input string) string {
+	if len(input) > 0 {
+		return input[:len(input)-1]
 	}
+	return input
 }

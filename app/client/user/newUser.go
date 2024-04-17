@@ -2,23 +2,24 @@ package user
 
 import (
 	security "DUCKY/client/security"
+	store "DUCKY/client/structure"
 	"fmt"
 )
 
 func NewUser() {
-	privateKey, publicKey, err := security.GenerateKeyPair(2048)
+	privateKey, publicKey, err := security.GenerateKeyPair(4096)
 	if err != nil {
 		fmt.Println("Erreur lors de la génération de la paire de clés:", err)
 		return
 	}
 
-	err = security.SavePEMKey(".ssh/private.pem", privateKey)
+	err = security.SavePEMKey(store.KeyPath+"/private.pem", privateKey)
 	if err != nil {
 		fmt.Println("Erreur lors de la sauvegarde de la clé privée:", err)
 		return
 	}
 
-	err = security.SavePEMKeyPublic(".ssh/public.pem", publicKey)
+	err = security.SavePEMKeyPublic(store.KeyPath+"/public.pem", publicKey)
 	if err != nil {
 		fmt.Println("Erreur lors de la sauvegarde de la clé publique:", err)
 		return

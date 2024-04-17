@@ -2,6 +2,7 @@ package bytesreader
 
 import (
 	auth "DUCKY/DUCKY/authentification"
+	db "DUCKY/DUCKY/database"
 	security "DUCKY/DUCKY/security"
 	authStorage "DUCKY/DUCKY/structure"
 	"bytes"
@@ -34,13 +35,19 @@ func CheckAuth(lines []string, conn net.Conn) []byte {
 	randomAuth, username := GetRandomAuthByAuthID(alphaCheck)
 	returnchack := []byte(lines[2])
 	if bytes.Equal(randomAuth, returnchack) {
+		privateKey, publicKey, _ := security.GenerateKeyRSA(2048)
 		addSession := authStorage.Session{
-			Username:  username,
-			SessionID: alphaCheck,
-			Conn:      conn,
+			Username:   username,
+			SessionID:  alphaCheck,
+			Conn:       conn,
+			PrivateKey: security.PrivateKeyToString(privateKey),
 		}
 		authStorage.Sessions = append(authStorage.Sessions, addSession)
-		return []byte("01\nYou are authentificate Has : \n" + username + "\nWith This ID :\n" + alphaCheck)
+		messageCrypt, err := security.EncryptMessageWithPublic(db.SelectKeyFromUser(username), (security.PublicKeyToString(publicKey)))
+		if err != nil {
+			fmt.Println(err)
+		}
+		return []byte("01\nYou are authentificate Has : \n" + username + "\nWith This ID :\n" + alphaCheck + "\n" + string(messageCrypt))
 	} else {
 		return []byte("You are not authentificate")
 	}
@@ -48,6 +55,9 @@ func CheckAuth(lines []string, conn net.Conn) []byte {
 
 func ProveIdentity(lines []string) []byte {
 	messagebyte := []byte(strings.Join(lines[1:], "\n"))
-	messagedecrypt, _ := security.DecryptMessage(messagebyte, security.GetPrivateKey())
+	messagedecrypt, err := security.DecryptMessage(security.GetPrivateKey(), messagebyte)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return append([]byte("proveidentity\n"), messagedecrypt...)
 }
